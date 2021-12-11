@@ -23,7 +23,7 @@ class NN:
         W2 = np.random.randn(layers_size[2], layers_size[1]) * 0.01
         b2 = np.random.randn(layers_size[2], 1) * 0.01
         self.best_params =  {'W1' : W1, 'b1': b1, 'W2': W2, 'b2' :b2}
-    
+        
     def feed_forward(self, x, target, params):
         W1, b1, W2, b2 = [params[key] for key in ('W1', 'b1', 'W2', 'b2')]
         is_correct_prediction = False
@@ -38,7 +38,8 @@ class NN:
 
     def back_prop(self, cache_from_forward, target, params):
         y = np.zeros(10)
-        y[target - 1] = 1
+        y[int(target) - 1] = 1
+        y = y.reshape(len(y), 1)
         x = cache_from_forward['x']
         h2 = cache_from_forward['h2']
         z2 = cache_from_forward['z2']
@@ -48,7 +49,9 @@ class NN:
         dz2 = h2 - y
         dW2 = np.dot(dz2, h1.T)
         db2 = dz2
-        dz1 = np.dot(self.params['W2'].T, (dz2 * self.sigmoid_derivative(z1)))
+        dz1 = np.dot(params['W2'].T, dz2) * self.sigmoid_derivative(z1)
+        dW1 = np.dot(dz1, x.T)
+        db1 = dz1
         dW1 = np.dot(dz1, x.T)
         db1 = dz1
 
@@ -63,7 +66,7 @@ class NN:
         for input_line, target in validation_set:
             input_line = input_line.reshape(len(input_line), 1)
             cache_from_forward = self.feed_forward(input_line, target, params)
-            is_correct_result = cache_from_forward['is_correct_result']
+            is_correct_result = cache_from_forward['is_correct_prediction']
             if is_correct_result == True:
                 counter += 1
         accuracy = (counter / len(validation_set)) * 100
@@ -104,13 +107,16 @@ if __name__ == "__main__":
  
     train_data = train_data / 255 # normalization
 
-    train_set = train_data[: 35000]
-    validation_set = train_data[35000: ]
+    train_set = train_data[: 2000]
+    validation_set = train_data[2000: ]
 
-    union_train_set = list(zip(train_set,  targets))
+    targets_for_train = targets[: 2000]
+    targets_for_validation = targets[2000: ]
+
+    union_train_set = list(zip(train_set,  targets_for_train))
     np.random.shuffle(union_train_set)
 
-    union_validation_set = list(zip(validation_set,  targets))
+    union_validation_set = list(zip(validation_set,  targets_for_validation))
     np.random.shuffle(union_validation_set)
 
     NN = NN()
@@ -118,8 +124,8 @@ if __name__ == "__main__":
     NN.create_layer(100)                  # hidden
     NN.create_layer(10)                   # output
     
-    NN.weights_and_bias_init()
-    NN.feed_forward(train_data[0].reshape(len(train_data[0]), 1))
+    NN.train(union_train_set, union_validation_set, 5)
+ 
 
 
 
